@@ -111,7 +111,9 @@ export default function ImportPage() {
   }, []);
 
   const handleMappingChange = (field: keyof ColumnMapping, value: string) => {
-    setMapping((prev) => ({ ...prev, [field]: value }));
+    // Handle the "none" placeholder value
+    const actualValue = value === "__none__" ? "" : value;
+    setMapping((prev) => ({ ...prev, [field]: actualValue }));
   };
 
   const isValidMapping = () => {
@@ -282,12 +284,12 @@ export default function ImportPage() {
                         {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, " $1")}
                         {isRequired && <span className="text-destructive">*</span>}
                       </Label>
-                      <Select value={value} onValueChange={(v) => handleMappingChange(field as keyof ColumnMapping, v)}>
+                      <Select value={value || "__none__"} onValueChange={(v) => handleMappingChange(field as keyof ColumnMapping, v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {headers.map((header) => (
                             <SelectItem key={header} value={header}>
                               {header}
