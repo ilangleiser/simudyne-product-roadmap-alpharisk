@@ -12,15 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Layers, ChevronLeft, ChevronRight, GanttChart as GanttChartIcon } from "lucide-react";
+import { GanttChart } from "@/components/roadmap/GanttChart";
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
 const SPRINTS_PER_QUARTER = 3;
 
 export default function RoadmapPage() {
   const { epics } = useEpics();
-  const [selectedYear] = useState(2026);
-  const [view, setView] = useState<"quarter" | "sprint">("quarter");
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const [view, setView] = useState<"quarter" | "sprint" | "gantt">("quarter");
 
   const getQuarterColor = (quarter: string) => {
     switch (quarter) {
@@ -88,27 +89,30 @@ export default function RoadmapPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" onClick={() => setSelectedYear((y) => y - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h2 className="text-xl font-semibold">{selectedYear}</h2>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" onClick={() => setSelectedYear((y) => y + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Select value={view} onValueChange={(v) => setView(v as "quarter" | "sprint")}>
-          <SelectTrigger className="w-36">
+        <Select value={view} onValueChange={(v) => setView(v as "quarter" | "sprint" | "gantt")}>
+          <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="quarter">By Quarter</SelectItem>
             <SelectItem value="sprint">By Sprint</SelectItem>
+            <SelectItem value="gantt">Gantt Chart</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Timeline View */}
-      {view === "quarter" ? (
+      {view === "gantt" ? (
+        <GanttChart epics={epics} year={selectedYear} />
+      ) : view === "quarter" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {QUARTERS.map((quarter) => (
             <Card key={quarter} className={`border-t-4 ${getQuarterBorderColor(quarter)}`}>
@@ -215,18 +219,20 @@ export default function RoadmapPage() {
         </Card>
       )}
 
-      {/* Legend */}
-      <Card>
-        <CardContent className="flex items-center justify-center gap-6 py-4">
-          <span className="text-sm text-muted-foreground">Legend:</span>
-          {QUARTERS.map((quarter) => (
-            <div key={quarter} className="flex items-center gap-2">
-              <div className={`h-3 w-3 rounded ${getQuarterColor(quarter)}`} />
-              <span className="text-sm">{quarter}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {/* Legend - only show for quarter/sprint views */}
+      {view !== "gantt" && (
+        <Card>
+          <CardContent className="flex items-center justify-center gap-6 py-4">
+            <span className="text-sm text-muted-foreground">Legend:</span>
+            {QUARTERS.map((quarter) => (
+              <div key={quarter} className="flex items-center gap-2">
+                <div className={`h-3 w-3 rounded ${getQuarterColor(quarter)}`} />
+                <span className="text-sm">{quarter}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
