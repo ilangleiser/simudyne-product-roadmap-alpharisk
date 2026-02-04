@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Check, AlertCircle, X } from "lucide-react";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 
 interface ColumnMapping {
   epic: string;
@@ -59,25 +60,46 @@ export default function ImportPage() {
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
+  const parseExcelFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(worksheet, {
+          defval: "",
+        });
 
-    if (!selectedFile.name.endsWith(".csv") && !selectedFile.name.endsWith(".xlsx")) {
-      toast.error("Please upload a CSV or Excel file");
-      return;
-    }
+        if (jsonData.length === 0) {
+          toast.error("No data found in the Excel file");
+          return;
+        }
 
-    setFile(selectedFile);
+        const parsedHeaders = Object.keys(jsonData[0]);
+        setHeaders(parsedHeaders);
+        setPreviewData(jsonData.slice(0, 10));
+        autoMapColumns(parsedHeaders);
+        toast.success("Excel file loaded successfully");
+      } catch (error) {
+        toast.error("Error parsing Excel file: " + (error as Error).message);
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Error reading file");
+    };
+    reader.readAsArrayBuffer(file);
+  };
 
-    Papa.parse(selectedFile, {
+  const parseCsvFile = (file: File) => {
+    Papa.parse(file, {
       header: true,
       preview: 10,
       skipEmptyLines: true,
       delimitersToGuess: [',', '\t', ';', '|'],
       complete: (results) => {
         if (results.errors.length > 0) {
-          // Filter out non-critical errors
           const criticalErrors = results.errors.filter(
             (err) => err.type !== 'FieldMismatch'
           );
@@ -90,32 +112,52 @@ export default function ImportPage() {
         const parsedHeaders = results.meta.fields || [];
         setHeaders(parsedHeaders);
         setPreviewData(results.data as Record<string, string>[]);
-
-        // Auto-map columns based on common names
-        const autoMapping: Partial<ColumnMapping> = {};
-        parsedHeaders.forEach((header) => {
-          const lowerHeader = header.toLowerCase();
-          if (lowerHeader.includes("epic")) autoMapping.epic = header;
-          if (lowerHeader.includes("sprint")) autoMapping.sprint = header;
-          if (lowerHeader.includes("quarter") || lowerHeader === "q") autoMapping.quarter = header;
-          if (lowerHeader.includes("feature")) autoMapping.feature = header;
-          if (lowerHeader.includes("description") || lowerHeader.includes("desc"))
-            autoMapping.description = header;
-          if (lowerHeader.includes("customer") || lowerHeader.includes("client"))
-            autoMapping.customer = header;
-          if (lowerHeader.includes("start")) autoMapping.startDate = header;
-          if (lowerHeader.includes("end")) autoMapping.endDate = header;
-          if (lowerHeader.includes("module") || lowerHeader.includes("category"))
-            autoMapping.module = header;
-        });
-
-        setMapping((prev) => ({ ...prev, ...autoMapping }));
-        toast.success("File loaded successfully");
+        autoMapColumns(parsedHeaders);
+        toast.success("CSV file loaded successfully");
       },
       error: (error) => {
         toast.error("Error reading file: " + error.message);
       },
     });
+  };
+
+  const autoMapColumns = (parsedHeaders: string[]) => {
+    const autoMapping: Partial<ColumnMapping> = {};
+    parsedHeaders.forEach((header) => {
+      const lowerHeader = header.toLowerCase();
+      if (lowerHeader.includes("epic")) autoMapping.epic = header;
+      if (lowerHeader.includes("sprint")) autoMapping.sprint = header;
+      if (lowerHeader.includes("quarter") || lowerHeader === "q") autoMapping.quarter = header;
+      if (lowerHeader.includes("feature")) autoMapping.feature = header;
+      if (lowerHeader.includes("description") || lowerHeader.includes("desc"))
+        autoMapping.description = header;
+      if (lowerHeader.includes("customer") || lowerHeader.includes("client"))
+        autoMapping.customer = header;
+      if (lowerHeader.includes("start")) autoMapping.startDate = header;
+      if (lowerHeader.includes("end")) autoMapping.endDate = header;
+      if (lowerHeader.includes("module") || lowerHeader.includes("category"))
+        autoMapping.module = header;
+    });
+    setMapping((prev) => ({ ...prev, ...autoMapping }));
+  };
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    const fileName = selectedFile.name.toLowerCase();
+    if (!fileName.endsWith(".csv") && !fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+      toast.error("Please upload a CSV or Excel file");
+      return;
+    }
+
+    setFile(selectedFile);
+
+    if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+      parseExcelFile(selectedFile);
+    } else {
+      parseCsvFile(selectedFile);
+    }
   }, []);
 
   const handleMappingChange = (field: keyof ColumnMapping, value: string) => {
@@ -150,40 +192,70 @@ export default function ImportPage() {
     setIsProcessing(true);
 
     try {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        delimitersToGuess: [',', '\t', ';', '|'],
-        complete: (results) => {
-          const items: RoadmapItem[] = (results.data as Record<string, string>[])
-            .filter((row) => row[mapping.epic] && row[mapping.feature])
-            .map((row) => ({
-              epic: row[mapping.epic] || "",
-              sprint: row[mapping.sprint] || "",
-              quarter: normalizeQuarter(row[mapping.quarter] || "Q1"),
-              feature: row[mapping.feature] || "",
-              description: row[mapping.description] || "",
-              customer: mapping.customer ? row[mapping.customer] : undefined,
-              startDate: mapping.startDate ? row[mapping.startDate] : undefined,
-              endDate: mapping.endDate ? row[mapping.endDate] : undefined,
-              module: mapping.module ? row[mapping.module] : undefined,
-            }));
+      const fileName = file.name.toLowerCase();
+      
+      const processData = (data: Record<string, string>[]) => {
+        const items: RoadmapItem[] = data
+          .filter((row) => row[mapping.epic] && row[mapping.feature])
+          .map((row) => ({
+            epic: row[mapping.epic] || "",
+            sprint: row[mapping.sprint] || "",
+            quarter: normalizeQuarter(row[mapping.quarter] || "Q1"),
+            feature: row[mapping.feature] || "",
+            description: row[mapping.description] || "",
+            customer: mapping.customer ? row[mapping.customer] : undefined,
+            startDate: mapping.startDate ? row[mapping.startDate] : undefined,
+            endDate: mapping.endDate ? row[mapping.endDate] : undefined,
+            module: mapping.module ? row[mapping.module] : undefined,
+          }));
 
-          if (items.length === 0) {
-            toast.error("No valid data found in file");
-            setIsProcessing(false);
-            return;
-          }
-
-          importRoadmapItems(items);
-          toast.success(`Successfully imported ${items.length} items`);
-          navigate("/epics");
-        },
-        error: (error) => {
-          toast.error("Error processing file: " + error.message);
+        if (items.length === 0) {
+          toast.error("No valid data found in file");
           setIsProcessing(false);
-        },
-      });
+          return;
+        }
+
+        importRoadmapItems(items);
+        toast.success(`Successfully imported ${items.length} items`);
+        navigate("/epics");
+      };
+
+      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(worksheet, {
+              defval: "",
+            });
+            processData(jsonData);
+          } catch (error) {
+            toast.error("Error processing Excel file: " + (error as Error).message);
+            setIsProcessing(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error("Error reading file");
+          setIsProcessing(false);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          delimitersToGuess: [',', '\t', ';', '|'],
+          complete: (results) => {
+            processData(results.data as Record<string, string>[]);
+          },
+          error: (error) => {
+            toast.error("Error processing file: " + error.message);
+            setIsProcessing(false);
+          },
+        });
+      }
     } catch (error) {
       toast.error("Failed to import file");
       setIsProcessing(false);
@@ -264,7 +336,7 @@ export default function ImportPage() {
                 <Input
                   id="file-upload"
                   type="file"
-                  accept=".csv,.xlsx"
+                  accept=".csv,.xlsx,.xls"
                   onChange={handleFileChange}
                   className="hidden"
                 />
