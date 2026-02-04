@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { Epic, UserStory, RoadmapItem } from "@/types/epic";
+import { seedEpics } from "@/data/seedData";
 
 interface EpicContextType {
   epics: Epic[];
@@ -26,15 +27,25 @@ export function EpicProvider({ children }: { children: React.ReactNode }) {
   const [selectedEpic, setSelectedEpic] = useState<Epic | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount, seed if empty
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setEpicsState(JSON.parse(stored));
+        const parsedEpics = JSON.parse(stored);
+        if (parsedEpics.length > 0) {
+          setEpicsState(parsedEpics);
+        } else {
+          // Seed with initial data if storage is empty
+          setEpicsState(seedEpics);
+        }
+      } else {
+        // No storage found, seed with initial data
+        setEpicsState(seedEpics);
       }
     } catch (error) {
       console.error("Failed to load epics from storage:", error);
+      setEpicsState(seedEpics);
     }
     setIsLoading(false);
   }, []);
