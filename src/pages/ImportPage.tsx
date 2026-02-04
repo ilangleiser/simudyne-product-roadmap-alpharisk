@@ -73,10 +73,18 @@ export default function ImportPage() {
     Papa.parse(selectedFile, {
       header: true,
       preview: 10,
+      skipEmptyLines: true,
+      delimitersToGuess: [',', '\t', ';', '|'],
       complete: (results) => {
         if (results.errors.length > 0) {
-          toast.error("Error parsing file: " + results.errors[0].message);
-          return;
+          // Filter out non-critical errors
+          const criticalErrors = results.errors.filter(
+            (err) => err.type !== 'FieldMismatch'
+          );
+          if (criticalErrors.length > 0) {
+            toast.error("Error parsing file: " + criticalErrors[0].message);
+            return;
+          }
         }
 
         const parsedHeaders = results.meta.fields || [];
@@ -144,6 +152,8 @@ export default function ImportPage() {
     try {
       Papa.parse(file, {
         header: true,
+        skipEmptyLines: true,
+        delimitersToGuess: [',', '\t', ';', '|'],
         complete: (results) => {
           const items: RoadmapItem[] = (results.data as Record<string, string>[])
             .filter((row) => row[mapping.epic] && row[mapping.feature])
