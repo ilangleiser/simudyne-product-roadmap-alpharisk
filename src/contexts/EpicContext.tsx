@@ -19,7 +19,7 @@ interface EpicContextType {
 
 const EpicContext = createContext<EpicContextType | undefined>(undefined);
 
-const STORAGE_KEY = "alpharisk-epics";
+const STORAGE_KEY = "simudyne-epics";
 
 export function EpicProvider({ children }: { children: React.ReactNode }) {
   const [epics, setEpicsState] = useState<Epic[]>([]);

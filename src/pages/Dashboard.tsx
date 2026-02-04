@@ -59,7 +59,7 @@ export default function Dashboard() {
         </div>
         <div className="max-w-md space-y-2">
           <h2 className="text-2xl font-semibold text-foreground">
-            Welcome to AlphaRisk Epic Generator
+            Welcome to Simudyne Product Roadmap
           </h2>
           <p className="text-muted-foreground">
             Start by importing your roadmap spreadsheet to generate AI-powered user stories

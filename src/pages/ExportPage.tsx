@@ -207,22 +207,22 @@ export default function ExportPage() {
     switch (selectedFormat) {
       case "jira":
         content = generateJiraCSV();
-        filename = "alpharisk-stories-jira.csv";
+        filename = "simudyne-stories-jira.csv";
         mimeType = "text/csv";
         break;
       case "azure-devops":
         content = generateAzureDevOpsCSV();
-        filename = "alpharisk-stories-azure.csv";
+        filename = "simudyne-stories-azure.csv";
         mimeType = "text/csv";
         break;
       case "trello":
         content = generateTrelloJSON();
-        filename = "alpharisk-stories-trello.json";
+        filename = "simudyne-stories-trello.json";
         mimeType = "application/json";
         break;
       case "asana":
         content = generateAsanaCSV();
-        filename = "alpharisk-stories-asana.csv";
+        filename = "simudyne-stories-asana.csv";
         mimeType = "text/csv";
         break;
       default:
