@@ -33,7 +33,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "alpharisk-backup.json";
+    a.download = "simudyne-backup.json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -107,7 +107,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>About</CardTitle>
           <CardDescription>
-            AlphaRisk Epic & User Story Generator
+            Simudyne Product Roadmap
           </CardDescription>
         </CardHeader>
         <CardContent>

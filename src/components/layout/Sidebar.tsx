@@ -30,8 +30,8 @@ export function Sidebar() {
           <Sparkles className="h-5 w-5 text-sidebar-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">AlphaRisk</h1>
-          <p className="text-xs text-sidebar-foreground/70">Epic Generator</p>
+          <h1 className="text-lg font-semibold tracking-tight">Simudyne</h1>
+          <p className="text-xs text-sidebar-foreground/70">Product Roadmap</p>
         </div>
       </div>
 
