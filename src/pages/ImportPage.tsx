@@ -290,7 +290,7 @@ export default function ImportPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">None</SelectItem>
-                          {headers.map((header) => (
+                          {headers.filter((header) => header && header.trim() !== "").map((header) => (
                             <SelectItem key={header} value={header}>
                               {header}
                             </SelectItem>
