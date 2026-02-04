@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Epic, UserStory, RoadmapItem } from "@/types/epic";
 import { seedEpics } from "@/data/seedData";
 
@@ -6,6 +7,7 @@ interface EpicContextType {
   epics: Epic[];
   selectedEpic: Epic | null;
   isLoading: boolean;
+  currentProductId: string | null;
   setEpics: (epics: Epic[]) => void;
   addEpic: (epic: Epic) => void;
   updateEpic: (id: string, updates: Partial<Epic>) => void;
@@ -20,42 +22,60 @@ interface EpicContextType {
 
 const EpicContext = createContext<EpicContextType | undefined>(undefined);
 
-const STORAGE_KEY = "simudyne-epics";
+const getStorageKey = (productId: string) => `simudyne-epics-${productId}`;
 
 export function EpicProvider({ children }: { children: React.ReactNode }) {
+  const { productId } = useParams<{ productId: string }>();
   const [epics, setEpicsState] = useState<Epic[]>([]);
   const [selectedEpic, setSelectedEpic] = useState<Epic | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const currentProductId = productId || null;
 
-  // Load from localStorage on mount, seed if empty
+  // Load from localStorage on mount or when product changes
   useEffect(() => {
+    if (!currentProductId) {
+      setEpicsState([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(getStorageKey(currentProductId));
       if (stored) {
         const parsedEpics = JSON.parse(stored);
         if (parsedEpics.length > 0) {
           setEpicsState(parsedEpics);
-        } else {
-          // Seed with initial data if storage is empty
+        } else if (currentProductId === "horizon") {
+          // Seed with initial Horizon data if storage is empty
           setEpicsState(seedEpics);
+        } else {
+          setEpicsState([]);
         }
-      } else {
-        // No storage found, seed with initial data
+      } else if (currentProductId === "horizon") {
+        // No storage found, seed with initial Horizon data
         setEpicsState(seedEpics);
+      } else {
+        setEpicsState([]);
       }
     } catch (error) {
       console.error("Failed to load epics from storage:", error);
-      setEpicsState(seedEpics);
+      if (currentProductId === "horizon") {
+        setEpicsState(seedEpics);
+      } else {
+        setEpicsState([]);
+      }
     }
+    setSelectedEpic(null);
     setIsLoading(false);
-  }, []);
+  }, [currentProductId]);
 
   // Save to localStorage on change
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(epics));
+    if (!isLoading && currentProductId) {
+      localStorage.setItem(getStorageKey(currentProductId), JSON.stringify(epics));
     }
-  }, [epics, isLoading]);
+  }, [epics, isLoading, currentProductId]);
 
   const setEpics = useCallback((newEpics: Epic[]) => {
     setEpicsState(newEpics);
@@ -133,6 +153,8 @@ export function EpicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const importRoadmapItems = useCallback((items: RoadmapItem[]) => {
+    if (!currentProductId) return;
+    
     const now = new Date().toISOString();
     const newEpics: Epic[] = [];
 
@@ -147,6 +169,7 @@ export function EpicProvider({ children }: { children: React.ReactNode }) {
       const firstItem = groupItems[0];
       const epic: Epic = {
         id: crypto.randomUUID(),
+        productId: currentProductId,
         title: epicName,
         description: groupItems.map((i) => `${i.feature}: ${i.description}`).join("\n"),
         quarter: firstItem.quarter,
@@ -163,13 +186,15 @@ export function EpicProvider({ children }: { children: React.ReactNode }) {
     });
 
     setEpicsState((prev) => [...prev, ...newEpics]);
-  }, []);
+  }, [currentProductId]);
 
   const clearAllData = useCallback(() => {
     setEpicsState([]);
     setSelectedEpic(null);
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
+    if (currentProductId) {
+      localStorage.removeItem(getStorageKey(currentProductId));
+    }
+  }, [currentProductId]);
 
   return (
     <EpicContext.Provider
@@ -177,6 +202,7 @@ export function EpicProvider({ children }: { children: React.ReactNode }) {
         epics,
         selectedEpic,
         isLoading,
+        currentProductId,
         setEpics,
         addEpic,
         updateEpic,

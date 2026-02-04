@@ -34,12 +34,13 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getStatusColorClass } from "@/lib/ganttUtils";
 
 export default function EpicsPage() {
-  const { epics, addEpic, updateEpic, deleteEpic } = useEpics();
+  const { productId } = useParams<{ productId: string }>();
+  const { epics, addEpic, updateEpic, deleteEpic, currentProductId } = useEpics();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterQuarter, setFilterQuarter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -84,6 +85,7 @@ export default function EpicsPage() {
     const now = new Date().toISOString();
     const newEpic: Epic = {
       id: crypto.randomUUID(),
+      productId: currentProductId || "horizon",
       title: formData.title,
       description: formData.description,
       quarter: formData.quarter,
@@ -408,7 +410,7 @@ export default function EpicsPage() {
                       {epic.stories.length === 0 ? (
                         <div className="flex items-center justify-center py-4 border-t">
                           <Button asChild variant="outline" size="sm">
-                            <Link to="/generate">
+                            <Link to={`/${productId}/generate`}>
                               <Sparkles className="mr-1 h-3 w-3" />
                               Generate Stories
                             </Link>

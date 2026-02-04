@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useEpics } from "@/contexts/EpicContext";
 import { EXPORT_FORMATS, ExportFormat } from "@/types/epic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 export default function ExportPage() {
+  const { productId } = useParams<{ productId: string }>();
   const { epics } = useEpics();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat["id"]>("jira");
   const [selectedEpicIds, setSelectedEpicIds] = useState<string[]>([]);
@@ -264,7 +266,7 @@ export default function ExportPage() {
           </p>
         </div>
         <Button asChild>
-          <a href="/generate">Generate Stories</a>
+          <Link to={`/${productId}/generate`}>Generate Stories</Link>
         </Button>
       </div>
     );

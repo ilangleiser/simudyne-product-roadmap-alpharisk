@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useEpics } from "@/contexts/EpicContext";
 import { UserStory, Priority, STORY_TEMPLATES } from "@/types/epic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 
 export default function GeneratePage() {
+  const { productId } = useParams<{ productId: string }>();
   const { epics, addStoryToEpic } = useEpics();
   const [selectedEpicIds, setSelectedEpicIds] = useState<string[]>([]);
   const [customPrompt, setCustomPrompt] = useState("");
@@ -171,7 +173,7 @@ export default function GeneratePage() {
           </p>
         </div>
         <Button asChild>
-          <a href="/import">Import Roadmap</a>
+          <Link to={`/${productId}/import`}>Import Roadmap</Link>
         </Button>
       </div>
     );
