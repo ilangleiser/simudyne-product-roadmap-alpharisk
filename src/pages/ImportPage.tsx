@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEpics } from "@/contexts/EpicContext";
 import { RoadmapItem, Quarter } from "@/types/epic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,7 @@ interface ColumnMapping {
 const REQUIRED_FIELDS = ["epic", "sprint", "quarter", "feature", "description"] as const;
 
 export default function ImportPage() {
+  const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const { importRoadmapItems } = useEpics();
   const [file, setFile] = useState<File | null>(null);
@@ -217,7 +218,7 @@ export default function ImportPage() {
 
         importRoadmapItems(items);
         toast.success(`Successfully imported ${items.length} items`);
-        navigate("/epics");
+        navigate(`/${productId}/epics`);
       };
 
       if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
@@ -432,7 +433,7 @@ export default function ImportPage() {
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => navigate("/")}>
+                <Button variant="outline" onClick={() => navigate(`/${productId}/dashboard`)}>
                   Cancel
                 </Button>
                 <Button onClick={handleImport} disabled={!isValidMapping() || isProcessing}>

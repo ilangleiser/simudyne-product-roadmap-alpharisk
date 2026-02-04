@@ -5,6 +5,7 @@ export type Module = "Model" | "Pipeline" | "Containers" | "Release" | "Document
 
 export interface Epic {
   id: string;
+  productId: string;
   title: string;
   description: string;
   quarter: Quarter;

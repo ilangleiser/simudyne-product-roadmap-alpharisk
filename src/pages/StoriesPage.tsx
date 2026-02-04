@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useEpics } from "@/contexts/EpicContext";
 import { UserStory, Priority, StoryStatus } from "@/types/epic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Search, FileText, CheckCircle2, Circle, Clock, XCircle } from "lucide-react";
 
 export default function StoriesPage() {
+  const { productId } = useParams<{ productId: string }>();
   const { epics, updateStory } = useEpics();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -103,7 +105,7 @@ export default function StoriesPage() {
           </p>
         </div>
         <Button asChild>
-          <a href="/generate">Generate Stories</a>
+          <Link to={`/${productId}/generate`}>Generate Stories</Link>
         </Button>
       </div>
     );

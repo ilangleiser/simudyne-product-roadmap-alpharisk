@@ -1,4 +1,5 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 import { useEpics } from "@/contexts/EpicContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 export default function Dashboard() {
+  const { productId } = useParams<{ productId: string }>();
   const { epics, isLoading } = useEpics();
 
   const totalStories = epics.reduce((acc, epic) => acc + epic.stories.length, 0);
@@ -68,13 +70,13 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-3">
           <Button asChild size="lg">
-            <Link to="/import">
+            <Link to={`/${productId}/import`}>
               <Upload className="mr-2 h-5 w-5" />
               Import Roadmap
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link to="/epics">
+            <Link to={`/${productId}/epics`}>
               <Layers className="mr-2 h-5 w-5" />
               Create Manually
             </Link>
@@ -162,7 +164,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="group cursor-pointer transition-shadow hover:shadow-md">
-          <Link to="/generate">
+          <Link to={`/${productId}/generate`}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
@@ -187,7 +189,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="group cursor-pointer transition-shadow hover:shadow-md">
-          <Link to="/roadmap">
+          <Link to={`/${productId}/roadmap`}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -212,7 +214,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="group cursor-pointer transition-shadow hover:shadow-md">
-          <Link to="/export">
+          <Link to={`/${productId}/export`}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
@@ -246,7 +248,7 @@ export default function Dashboard() {
               <CardDescription>Your latest imported or created epics</CardDescription>
             </div>
             <Button asChild variant="outline" size="sm">
-              <Link to="/epics">View all</Link>
+              <Link to={`/${productId}/epics`}>View all</Link>
             </Button>
           </div>
         </CardHeader>
