@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Epic, UserStory, RoadmapItem } from "@/types/epic";
-import { seedEpics } from "@/data/seedData";
+import { seedEpics, pulseSdgSeedEpics } from "@/data/seedData";
 
 interface EpicContextType {
   epics: Epic[];
@@ -23,6 +23,17 @@ interface EpicContextType {
 const EpicContext = createContext<EpicContextType | undefined>(undefined);
 
 const getStorageKey = (productId: string) => `simudyne-epics-${productId}`;
+
+const getSeedData = (productId: string): Epic[] => {
+  switch (productId) {
+    case "horizon":
+      return seedEpics;
+    case "pulse-sdg":
+      return pulseSdgSeedEpics;
+    default:
+      return [];
+  }
+};
 
 export function EpicProvider({ children }: { children: React.ReactNode }) {
   const { productId } = useParams<{ productId: string }>();
@@ -46,25 +57,20 @@ export function EpicProvider({ children }: { children: React.ReactNode }) {
         const parsedEpics = JSON.parse(stored);
         if (parsedEpics.length > 0) {
           setEpicsState(parsedEpics);
-        } else if (currentProductId === "horizon") {
-          // Seed with initial Horizon data if storage is empty
-          setEpicsState(seedEpics);
         } else {
-          setEpicsState([]);
+          // Storage is empty, seed with initial data
+          const seedData = getSeedData(currentProductId);
+          setEpicsState(seedData);
         }
-      } else if (currentProductId === "horizon") {
-        // No storage found, seed with initial Horizon data
-        setEpicsState(seedEpics);
       } else {
-        setEpicsState([]);
+        // No storage found, seed with initial data
+        const seedData = getSeedData(currentProductId);
+        setEpicsState(seedData);
       }
     } catch (error) {
       console.error("Failed to load epics from storage:", error);
-      if (currentProductId === "horizon") {
-        setEpicsState(seedEpics);
-      } else {
-        setEpicsState([]);
-      }
+      const seedData = getSeedData(currentProductId);
+      setEpicsState(seedData);
     }
     setSelectedEpic(null);
     setIsLoading(false);
