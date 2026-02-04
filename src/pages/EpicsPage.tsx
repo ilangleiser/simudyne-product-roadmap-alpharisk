@@ -32,8 +32,11 @@ import {
   FileText,
   Sparkles,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { getStatusColorClass } from "@/lib/ganttUtils";
 
 export default function EpicsPage() {
   const { epics, addEpic, updateEpic, deleteEpic } = useEpics();
@@ -41,6 +44,19 @@ export default function EpicsPage() {
   const [filterQuarter, setFilterQuarter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEpic, setEditingEpic] = useState<Epic | null>(null);
+  const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
+
+  const toggleEpicExpansion = (epicId: string) => {
+    setExpandedEpics((prev) => {
+      const next = new Set(prev);
+      if (next.has(epicId)) {
+        next.delete(epicId);
+      } else {
+        next.add(epicId);
+      }
+      return next;
+    });
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -316,65 +332,119 @@ export default function EpicsPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredEpics.map((epic) => (
-            <Card key={epic.id} className="group transition-shadow hover:shadow-md">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge className={getQuarterColor(epic.quarter)}>{epic.quarter}</Badge>
-                      <Badge variant="outline">Sprint {epic.sprint}</Badge>
+          {filteredEpics.map((epic) => {
+            const isExpanded = expandedEpics.has(epic.id);
+            return (
+              <Collapsible
+                key={epic.id}
+                open={isExpanded}
+                onOpenChange={() => toggleEpicExpansion(epic.id)}
+              >
+                <Card className="group transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getQuarterColor(epic.quarter)}>{epic.quarter}</Badge>
+                          <Badge variant="outline">Sprint {epic.sprint}</Badge>
+                        </div>
+                        <CardTitle className="text-lg line-clamp-1">{epic.title}</CardTitle>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditDialog(epic);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEpic(epic.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <CardTitle className="text-lg line-clamp-1">{epic.title}</CardTitle>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => openEditDialog(epic)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => handleDeleteEpic(epic.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <CardDescription className="line-clamp-2">{epic.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {epic.customer && (
-                      <Badge variant="secondary">{epic.customer}</Badge>
-                    )}
-                    {epic.module && (
-                      <Badge variant="outline">{epic.module}</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {epic.stories.length} stories
-                    </span>
-                    {epic.stories.length === 0 && (
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to="/generate">
-                          <Sparkles className="mr-1 h-3 w-3" />
-                          Generate
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    <CardDescription className="line-clamp-2">{epic.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {epic.customer && (
+                          <Badge variant="secondary">{epic.customer}</Badge>
+                        )}
+                        {epic.module && (
+                          <Badge variant="outline">{epic.module}</Badge>
+                        )}
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex items-center gap-1 hover:bg-muted"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {epic.stories.length} stories
+                          </span>
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="mt-3">
+                      {epic.stories.length === 0 ? (
+                        <div className="flex items-center justify-center py-4 border-t">
+                          <Button asChild variant="outline" size="sm">
+                            <Link to="/generate">
+                              <Sparkles className="mr-1 h-3 w-3" />
+                              Generate Stories
+                            </Link>
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="border-t pt-3 space-y-2">
+                          {epic.stories.map((story) => (
+                            <div
+                              key={story.id}
+                              className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <div
+                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${getStatusColorClass(story.status)}`}
+                                />
+                                <span className="text-sm truncate">{story.title}</span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge className={getPriorityColor(story.priority)} variant="secondary">
+                                  {story.priority}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground w-12 text-right">
+                                  {story.storyPoints} pts
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </CardContent>
+                </Card>
+              </Collapsible>
+            );
+          })}
         </div>
       )}
 
