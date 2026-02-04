@@ -20,10 +20,10 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <EpicProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <BrowserRouter>
+        <EpicProvider>
+          <Toaster />
+          <Sonner />
           <AppLayout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -37,8 +37,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
-        </BrowserRouter>
-      </EpicProvider>
+        </EpicProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
