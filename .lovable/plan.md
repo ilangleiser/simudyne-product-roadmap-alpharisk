@@ -1,111 +1,100 @@
 
+## Unified Gantt Chart for All Products
 
-## AI Product Manager Assistant
-
-A conversational AI assistant embedded into the product roadmap tool that acts as an expert product manager. It has full context of the current product's epics, stories, roadmap data, and can help with strategic decisions, story refinement, sprint planning, and roadmap analysis.
+Add a comprehensive Gantt chart to the Simudyne Product Roadmap hub page that displays all three product portfolios (Horizon, Pulse_SDG, AlphaRisk Studio) in a single unified timeline view.
 
 ---
 
 ### What It Does
 
-The assistant will be a chat panel accessible from the sidebar navigation. When opened, it streams responses in real-time and has awareness of the current product's data (epics, stories, quarters, modules, customers). 
+The new unified Gantt chart will appear on the ProductHub page (the landing page at `/`) and show:
+- All epics from all three products on a single timeline
+- Product groupings with expandable/collapsible sections
+- Color-coded product headers to distinguish between portfolios
+- The same resizable column, expand/collapse, and timeline features as the existing Gantt chart
 
-Example interactions:
-- "Which epics are at risk of not shipping this quarter?"
-- "Suggest acceptance criteria for the RegimeDetector epic"
-- "What's the story point distribution across Q2?"
-- "Help me prioritize these 5 epics for the next sprint"
-- "Write a stakeholder update email for Q3 progress"
-- "What dependencies should I watch out for between CausalValidator and AlphaForge?"
+This allows stakeholders to see the complete Simudyne roadmap at a glance without navigating into individual products.
+
+---
+
+### Visual Structure
+
+```text
++----------------------------------------------------------+
+| Simudyne Product Roadmap                                 |
+| [Select a product to manage...]                          |
++----------------------------------------------------------+
+| [Product Cards: Horizon | Pulse_SDG | AlphaRisk Studio]  |
++----------------------------------------------------------+
+| Portfolio Roadmap Overview           [2026] [Expand All] |
++----------------------------------------------------------+
+| Product / Epic              | Jan Feb Mar ... Nov Dec    |
+|-----------------------------|-----------------------------|
+| ▼ Horizon (17 epics)        |                             |
+|   ├─ Scoping                | ████                        |
+|   ├─ Factor Evaluation      | ████                        |
+|   └─ ...                    |                             |
+| ▼ Pulse_SDG (11 epics)      |                             |
+|   ├─ Scoping                | ████                        |
+|   └─ ...                    |                             |
+| ▼ AlphaRisk Studio (12 epics)|                            |
+|   ├─ RegimeDetector         |     ████                    |
+|   └─ ...                    |                             |
++----------------------------------------------------------+
+| [Product Legend: Horizon | Pulse_SDG | AlphaRisk Studio] |
++----------------------------------------------------------+
+```
 
 ---
 
 ### Components to Build
 
-#### 1. New Edge Function: `pm-assistant`
+#### 1. New Component: `PortfolioGanttChart.tsx`
 
-A streaming edge function that:
-- Receives the chat messages plus full product context (epics, stories, metadata)
-- Uses a detailed system prompt that establishes the AI as an expert agile PM with financial technology domain knowledge
-- Streams responses token-by-token using SSE
-- Handles rate limiting (429) and credit errors (402)
+A variation of the existing GanttChart that:
+- Accepts all products and their epics as a combined dataset
+- Groups epics by product with collapsible product headers
+- Uses distinct colors for each product (complementing existing quarter colors)
+- Includes the same resizable column feature
+- Shows aggregated stats (total epics, total stories across all products)
 
-#### 2. New Page: `src/pages/PMAssistantPage.tsx`
+#### 2. New Component: `PortfolioGanttRow.tsx`
 
-A full chat interface with:
-- Message history (user and assistant messages)
-- Real-time streaming with token-by-token rendering
-- Markdown rendering for formatted responses (tables, lists, code blocks)
-- Product context automatically injected into every request
-- Quick-action suggestion chips for common PM tasks
-- Clear conversation button
+A row component that:
+- Renders product group headers (collapsible)
+- Renders individual epic rows within each product group
+- Inherits the same expand/collapse behavior for stories within epics
 
-#### 3. Sidebar Navigation Update
+#### 3. Update: `ProductHub.tsx`
 
-- Add "PM Assistant" nav item with `MessageSquare` icon to both `Sidebar.tsx` and `MobileSidebar.tsx`
-- Route: `/:productId/assistant`
-
-#### 4. Route Registration in `App.tsx`
-
-- Add the new route under the `/:productId` product layout
+Add the unified Gantt chart below the existing product cards:
+- Load all epics from all products from localStorage
+- Add year selector (matching the existing roadmap page pattern)
+- Include the PortfolioGanttChart component
 
 ---
 
-### Architecture
+### Data Loading Strategy
+
+The ProductHub already loads stats for all products from localStorage. We'll extend this to load the full epic arrays:
 
 ```text
-User types message
-       |
-       v
-PMAssistantPage.tsx
-  - Collects current product's epics/stories
-  - Builds context summary
-  - Streams via fetch to edge function
-       |
-       v
-supabase/functions/pm-assistant/index.ts
-  - Receives messages + product context
-  - System prompt: expert PM persona
-  - Calls Lovable AI Gateway (streaming)
-  - Returns SSE stream
-       |
-       v
-Token-by-token rendering in chat UI
-  - Markdown support via react-markdown
-  - Auto-scroll to bottom
-  - Loading indicator while streaming
+PRODUCTS.forEach(product => {
+  const stored = localStorage.getItem(`simudyne-epics-${product.id}`);
+  allEpics.push({ product, epics: JSON.parse(stored) });
+});
 ```
 
 ---
 
-### System Prompt Design
+### Color Scheme for Products
 
-The PM assistant will have deep context:
-- **Role**: Expert agile product manager specializing in financial technology
-- **Context injection**: Each request will include a summary of the current product's epics (titles, quarters, story counts, modules, customers, dates)
-- **Capabilities**: Sprint planning, story refinement, risk analysis, stakeholder communication, prioritization frameworks (MoSCoW, RICE), dependency analysis
+To distinguish products in the unified view:
+- **Horizon**: Blue tones (similar to Q1)
+- **Pulse_SDG**: Green tones (similar to Q2)
+- **AlphaRisk Studio**: Purple/Violet tones (distinct from quarters)
 
----
-
-### UI Design
-
-The chat page will feature:
-- A clean message list with user/assistant message bubbles
-- A fixed input area at the bottom with send button
-- Suggestion chips above the input for quick actions like:
-  - "Summarize roadmap status"
-  - "Identify at-risk epics"
-  - "Draft sprint goals"
-  - "Analyze story coverage"
-- Assistant messages rendered with markdown support for rich formatting
-
----
-
-### Dependencies
-
-- **react-markdown**: New dependency needed for rendering markdown in assistant responses
-- **Lovable AI Gateway**: Already configured with `LOVABLE_API_KEY`
-- **Model**: `google/gemini-3-flash-preview` (default)
+These will be added as Tailwind classes in the theme configuration.
 
 ---
 
@@ -113,23 +102,39 @@ The chat page will feature:
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/pm-assistant/index.ts` | Streaming edge function with PM system prompt |
-| `src/pages/PMAssistantPage.tsx` | Chat interface with streaming, markdown, context injection |
+| `src/components/roadmap/PortfolioGanttChart.tsx` | Unified Gantt chart with product groupings |
+| `src/components/roadmap/PortfolioGanttRow.tsx` | Product group and epic row rendering |
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Add `/assistant` route under product layout |
-| `src/components/layout/Sidebar.tsx` | Add "PM Assistant" nav item |
-| `src/components/layout/MobileSidebar.tsx` | Add "PM Assistant" nav item |
-| `supabase/config.toml` | Register the new edge function |
+| `src/pages/ProductHub.tsx` | Add unified Gantt chart section below product cards |
+| `src/index.css` | Add product-specific color classes for the portfolio view |
 
 ---
 
-### Technical Notes
+### Technical Details
 
-- Product context (epics summary) is built client-side and sent with each message to keep the assistant aware of the current state
-- Conversation history is kept in React state (not persisted to database) to keep things simple
-- The streaming implementation follows the established SSE pattern with line-by-line parsing, CRLF handling, and final buffer flush
-- The edge function mirrors the pattern from `generate-stories` but with streaming enabled
+**PortfolioGanttChart Props:**
+```typescript
+interface ProductEpics {
+  product: Product;
+  epics: Epic[];
+}
+
+interface PortfolioGanttChartProps {
+  productData: ProductEpics[];
+  year: number;
+}
+```
+
+**State Management:**
+- Expanded products tracked via `Set<string>` (product IDs)
+- Expanded epics tracked via `Set<string>` (epic IDs)
+- Both can be expanded/collapsed independently
+
+**Reused Utilities:**
+- `calculateBarStart`, `calculateBarWidth` from `ganttUtils.ts`
+- `GanttTimeline` component for the header
+- Same resize handle logic from `GanttChart.tsx`
