@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PRODUCTS, Product } from "@/types/product";
 import { Epic } from "@/types/epic";
-import { TrendingUp, Activity, ArrowRight, Sparkles, Layers } from "lucide-react";
+import { TrendingUp, Activity, ArrowRight, Sparkles, Layers, Calendar } from "lucide-react";
+import { PortfolioGanttChart, ProductEpics } from "@/components/roadmap/PortfolioGanttChart";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STORAGE_PREFIX = "simudyne-epics-";
 
@@ -29,10 +37,13 @@ interface ProductStats {
 export default function ProductHub() {
   const navigate = useNavigate();
   const [productStats, setProductStats] = useState<Record<string, ProductStats>>({});
+  const [productData, setProductData] = useState<ProductEpics[]>([]);
+  const [selectedYear, setSelectedYear] = useState(2026);
 
   useEffect(() => {
-    // Load stats for each product from localStorage
+    // Load stats and full epic data for each product from localStorage
     const stats: Record<string, ProductStats> = {};
+    const allProductData: ProductEpics[] = [];
     
     PRODUCTS.forEach((product) => {
       try {
@@ -45,15 +56,19 @@ export default function ProductHub() {
             storyCount: epics.reduce((acc, e) => acc + e.stories.length, 0),
             quarters,
           };
+          allProductData.push({ product, epics });
         } else {
           stats[product.id] = { epicCount: 0, storyCount: 0, quarters: [] };
+          allProductData.push({ product, epics: [] });
         }
       } catch {
         stats[product.id] = { epicCount: 0, storyCount: 0, quarters: [] };
+        allProductData.push({ product, epics: [] });
       }
     });
 
     setProductStats(stats);
+    setProductData(allProductData);
   }, []);
 
   const handleEnterProduct = (productId: string) => {
@@ -146,6 +161,30 @@ export default function ProductHub() {
               </Card>
             );
           })}
+        </div>
+
+        {/* Unified Portfolio Gantt Chart */}
+        <div className="mt-12 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Timeline Year:</span>
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(value) => setSelectedYear(parseInt(value))}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                  <SelectItem value="2027">2027</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <PortfolioGanttChart productData={productData} year={selectedYear} />
         </div>
       </main>
     </div>

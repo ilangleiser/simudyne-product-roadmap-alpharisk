@@ -81,6 +81,11 @@ export default {
           q3: "hsl(var(--q3))",
           q4: "hsl(var(--q4))",
         },
+        product: {
+          horizon: "hsl(var(--product-horizon))",
+          pulse: "hsl(var(--product-pulse))",
+          alpharisk: "hsl(var(--product-alpharisk))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
