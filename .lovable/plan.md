@@ -1,197 +1,93 @@
 
 
-## Multi-Product Hub for Simudyne
+## Add AlphaRisk Studio as a Third Product
 
-Create a product hub that allows navigation between two separate products: **Horizon** (current data) and **Pulse_SDG** (including OrderBookGPT), each with their own independent roadmaps, epics, and stories.
-
----
-
-### Overview
-
-The application will be restructured to include:
-1. A **Product Hub** landing page for selecting between products
-2. **Product-scoped routing** (e.g., `/horizon/dashboard`, `/pulse-sdg/roadmap`)
-3. **Product-aware context** that filters data by selected product
-4. **Separate data storage** per product in localStorage
+Add AlphaRisk Studio to the Product Hub with its full 12-agent roadmap extracted from the uploaded PDF. The product will appear alongside Horizon and Pulse_SDG on the hub page.
 
 ---
 
-### Architecture
+### Product Definition
+
+**AlphaRisk Studio**
+- **ID**: `alpharisk-studio`
+- **Name**: AlphaRisk Studio
+- **Description**: Composable Simulation OS -- 12-Agent Marketplace
+- **Icon**: `Sparkles` (representing AI/agents)
+- **Sub-products**: RegimeDetector, OrderbookGPT, CausalValidator, AlphaForge, RiskOracle, CrowdingRadar, ExecutionOptimizer, LiquidityStress, PortfolioArchitect, CausalCouncil, RegimeAllocator, WorkflowOrchestrator
+
+---
+
+### Roadmap Epics (from PDF)
+
+The 12 agents will be mapped to epics organized by their shipping quarter and tier, with dates derived from the PDF's shipping timeline:
+
+| # | Epic Title | Module | Quarter | Tier | Date Range |
+|---|-----------|--------|---------|------|------------|
+| 1 | RegimeDetector | Model | Q2 | T1 - Foundation | Apr 6 - Apr 12, 2026 |
+| 2 | OrderbookGPT | Model | Q2 | T2 - Simulation | Apr 13 - Apr 19, 2026 |
+| 3 | CausalValidator | Model | Q2 | T1 - Foundation | Apr 20 - Apr 26, 2026 |
+| 4 | AlphaForge | Model | Q2 | T1 - Foundation | Apr 27 - May 3, 2026 |
+| 5 | RiskOracle | Model | Q3 | T2 - Simulation | Jul 6 - Jul 12, 2026 |
+| 6 | CrowdingRadar | Model | Q3 | T2 - Simulation | Jul 13 - Jul 19, 2026 |
+| 7 | ExecutionOptimizer | Pipeline | Q3 | T3 - Optimization | Jul 20 - Jul 26, 2026 |
+| 8 | LiquidityStress | Model | Q3 | T3 - Optimization | Jul 27 - Aug 2, 2026 |
+| 9 | PortfolioArchitect | Pipeline | Q3 | T3 - Optimization | Aug 3 - Aug 9, 2026 |
+| 10 | CausalCouncil | Model | Q4 | T4 - Intelligence | Sep 28 - Oct 4, 2026 |
+| 11 | RegimeAllocator | Model | Q4 | T4 - Intelligence | Oct 5 - Oct 11, 2026 |
+| 12 | WorkflowOrchestrator | Pipeline | Q4 | T4 - Intelligence | Oct 12 - Oct 18, 2026 |
+
+Additionally, 3 milestone epics will be added:
+- **Marketplace Launch** (Q2 end) -- deployment and listing
+- **Agent Composition Validation** (Q3 end) -- proving multi-agent MCP architecture
+- **Full Studio Release** (Q4 end) -- $500K/desk/year product launch
+
+---
+
+### Changes Required
+
+#### 1. `src/types/product.ts`
+- Add AlphaRisk Studio to the `PRODUCTS` array with id `alpharisk-studio`
+
+#### 2. `src/data/seedData.ts`
+- Add `alphaRiskStudioSeedEpics` array with 15 epics (12 agents + 3 milestones)
+- Each epic includes the agent description, tier, dependencies, and pricing from the PDF
+
+#### 3. `src/contexts/EpicContext.tsx`
+- Import the new seed data
+- Add `alpharisk-studio` case to `getSeedData()` function
+
+#### 4. `src/pages/ProductHub.tsx`
+- Update the icon mapping to handle the new product's icon
+- Adjust the grid layout from `md:grid-cols-2` to `md:grid-cols-3` to accommodate 3 product cards
+
+#### 5. `src/components/layout/Sidebar.tsx`
+- Add `Sparkles` to the icon mapping for AlphaRisk Studio's icon
+
+#### 6. `src/components/layout/MobileSidebar.tsx`
+- Same icon mapping update as Sidebar
+
+---
+
+### Hub Layout Update
+
+The product grid will change from a 2-column layout to a 3-column layout:
 
 ```text
-                    ┌─────────────────────────────────────┐
-                    │         Product Hub (/)             │
-                    │   ┌───────────┐   ┌───────────────┐ │
-                    │   │  Horizon  │   │   Pulse_SDG   │ │
-                    │   │           │   │ (OrderBookGPT)│ │
-                    │   └─────┬─────┘   └───────┬───────┘ │
-                    └─────────┼─────────────────┼─────────┘
-                              │                 │
-              ┌───────────────▼───────────────┐ │
-              │   /horizon/*                  │ │
-              │   - Dashboard                 │ │
-              │   - Epics                     │ │
-              │   - Roadmap                   │ │
-              │   - Stories                   │ │
-              │   - Import/Export/Generate    │ │
-              └───────────────────────────────┘ │
-                              ┌─────────────────▼─────────┐
-                              │   /pulse-sdg/*            │
-                              │   - Dashboard             │
-                              │   - Epics                 │
-                              │   - Roadmap               │
-                              │   - Stories               │
-                              │   - Import/Export/Generate│
-                              └───────────────────────────┘
+ -----------------------------------------------
+|  Simudyne Product Roadmap                      |
+|                                                 |
+|  [Horizon]  [Pulse_SDG]  [AlphaRisk Studio]    |
+|  17 epics    11 epics     15 epics              |
+|  Q1-Q4       Q1-Q4        Q2-Q4                 |
+ -----------------------------------------------
 ```
-
----
-
-### Implementation Details
-
-#### 1. Add Product Type and Context
-
-**Create `src/types/product.ts`:**
-| Field | Type | Description |
-|-------|------|-------------|
-| id | string | Product identifier (e.g., "horizon", "pulse-sdg") |
-| name | string | Display name (e.g., "Horizon", "Pulse_SDG") |
-| description | string | Product description |
-| icon | string | Icon name for display |
-| subProducts | string[] | Sub-products like "OrderBookGPT" |
-
-**Create `src/contexts/ProductContext.tsx`:**
-- Store currently selected product
-- Provide `selectProduct()` and `currentProduct` values
-- Persist selected product in localStorage
-
-#### 2. Update Epic Type and Context
-
-**Modify `src/types/epic.ts`:**
-- Add `productId: string` field to Epic interface
-
-**Modify `src/contexts/EpicContext.tsx`:**
-- Separate localStorage keys per product: `simudyne-epics-horizon`, `simudyne-epics-pulse-sdg`
-- Filter epics by current product when reading
-- Product-aware import/export
-
-#### 3. Create Product Hub Page
-
-**Create `src/pages/ProductHub.tsx`:**
-- Display product cards with:
-  - Product name and description
-  - Epic count and progress summary
-  - Sub-products listed (e.g., OrderBookGPT for Pulse_SDG)
-  - "Enter" button to navigate to product dashboard
-
-**Design:**
-```text
-┌─────────────────────────────────────────────────────────┐
-│                  Simudyne Product Roadmap               │
-│                                                         │
-│   ┌─────────────────────┐   ┌─────────────────────┐    │
-│   │       Horizon       │   │      Pulse_SDG      │    │
-│   │                     │   │                     │    │
-│   │  Financial Risk     │   │  OrderBookGPT       │    │
-│   │  Modeling Suite     │   │  AI Trading Suite   │    │
-│   │                     │   │                     │    │
-│   │  17 epics | Q1-Q4   │   │  0 epics | --       │    │
-│   │                     │   │                     │    │
-│   │  [Enter Product →]  │   │  [Enter Product →]  │    │
-│   └─────────────────────┘   └─────────────────────┘    │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### 4. Update Routing
-
-**Modify `src/App.tsx`:**
-
-| Route | Component | Description |
-|-------|-----------|-------------|
-| `/` | ProductHub | Product selection page |
-| `/:productId/dashboard` | Dashboard | Product-specific dashboard |
-| `/:productId/epics` | EpicsPage | Product-specific epics |
-| `/:productId/roadmap` | RoadmapPage | Product-specific roadmap |
-| `/:productId/stories` | StoriesPage | Product-specific stories |
-| `/:productId/import` | ImportPage | Import for this product |
-| `/:productId/generate` | GeneratePage | AI generation for product |
-| `/:productId/export` | ExportPage | Export for product |
-| `/settings` | SettingsPage | Global settings |
-
-#### 5. Update Sidebar Navigation
-
-**Modify `src/components/layout/Sidebar.tsx`:**
-- Show current product name/icon in header
-- Navigation links use product-prefixed routes
-- Add "Switch Product" link back to hub
-- Show product badge/indicator
-
-**Modify `src/components/layout/MobileSidebar.tsx`:**
-- Same changes as Sidebar
-
-#### 6. Update Layout
-
-**Modify `src/components/layout/AppLayout.tsx`:**
-- Conditionally show sidebar only when inside a product
-- Product Hub has a simpler layout without sidebar
-
-#### 7. Seed Data Updates
-
-**Modify `src/data/seedData.ts`:**
-- Add `productId: "horizon"` to all existing Horizon epics
-- Create `pulseSdgSeedEpics` array for Pulse_SDG (empty initially, ready for user import)
-
----
-
-### Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/types/product.ts` | Product type definitions |
-| `src/contexts/ProductContext.tsx` | Product selection context |
-| `src/pages/ProductHub.tsx` | Product selection landing page |
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/types/epic.ts` | Add `productId` field |
-| `src/contexts/EpicContext.tsx` | Product-aware data management |
-| `src/App.tsx` | Add product-scoped routes |
-| `src/components/layout/Sidebar.tsx` | Product-aware navigation |
-| `src/components/layout/MobileSidebar.tsx` | Product-aware navigation |
-| `src/components/layout/AppLayout.tsx` | Conditional sidebar display |
-| `src/data/seedData.ts` | Add productId to Horizon data |
-| `src/pages/Dashboard.tsx` | Use product context |
-| `src/pages/EpicsPage.tsx` | Use product context |
-| `src/pages/RoadmapPage.tsx` | Use product context |
-| `src/pages/StoriesPage.tsx` | Use product context |
-| `src/pages/ImportPage.tsx` | Import with product assignment |
-| `src/pages/GeneratePage.tsx` | Use product context |
-| `src/pages/ExportPage.tsx` | Export product-specific data |
-
----
-
-### Product Definitions
-
-**Horizon:**
-- ID: `horizon`
-- Name: Horizon
-- Description: Financial Risk Modeling Suite
-- Sub-products: Horizon Risk, Horizon Regime
-
-**Pulse_SDG:**
-- ID: `pulse-sdg`
-- Name: Pulse_SDG
-- Description: Sustainable Development Goals Analytics
-- Sub-products: OrderBookGPT
 
 ---
 
 ### Technical Notes
 
-1. **URL Structure**: Product ID in URL ensures shareable links work correctly
-2. **Data Isolation**: Each product has separate localStorage for data independence
-3. **Migration**: Existing Horizon data will be tagged with `productId: "horizon"` automatically
-4. **Extensibility**: Adding new products requires only adding to the products config
+- The `max-w-4xl` constraint on the grid will be widened to `max-w-6xl` to fit 3 cards
+- Each agent epic's `sprint` field will use the tier designation (e.g., "T1 - Foundation")
+- The `customer` field will store the pricing info (e.g., "$25K/yr") for reference
+- No routing or architecture changes needed -- the existing `/:productId` pattern handles any number of products automatically
 
