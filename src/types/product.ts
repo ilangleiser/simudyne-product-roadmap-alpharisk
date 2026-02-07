@@ -21,6 +21,26 @@ export const PRODUCTS: Product[] = [
     icon: "Activity",
     subProducts: ["OrderBookGPT"],
   },
+  {
+    id: "alpharisk-studio",
+    name: "AlphaRisk Studio",
+    description: "Composable Simulation OS — 12-Agent Marketplace",
+    icon: "Sparkles",
+    subProducts: [
+      "RegimeDetector",
+      "OrderbookGPT",
+      "CausalValidator",
+      "AlphaForge",
+      "RiskOracle",
+      "CrowdingRadar",
+      "ExecutionOptimizer",
+      "LiquidityStress",
+      "PortfolioArchitect",
+      "CausalCouncil",
+      "RegimeAllocator",
+      "WorkflowOrchestrator",
+    ],
+  },
 ];
 
 export const getProductById = (id: string): Product | undefined => {

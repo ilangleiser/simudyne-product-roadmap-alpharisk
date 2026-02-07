@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Epic, UserStory, RoadmapItem } from "@/types/epic";
-import { seedEpics, pulseSdgSeedEpics } from "@/data/seedData";
+import { seedEpics, pulseSdgSeedEpics, alphaRiskStudioSeedEpics } from "@/data/seedData";
 
 interface EpicContextType {
   epics: Epic[];
@@ -30,6 +30,8 @@ const getSeedData = (productId: string): Epic[] => {
       return seedEpics;
     case "pulse-sdg":
       return pulseSdgSeedEpics;
+    case "alpharisk-studio":
+      return alphaRiskStudioSeedEpics;
     default:
       return [];
   }
