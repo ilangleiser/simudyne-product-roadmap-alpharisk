@@ -1,1 +1,7 @@
 project_id = "imejfrhfbwkycrecdcgk"
+
+[functions.generate-stories]
+verify_jwt = false
+
+[functions.pm-assistant]
+verify_jwt = false
