@@ -154,10 +154,10 @@ function StoryRow({ story, epic, year, storyIndex, totalStories, labelWidth }: S
       style={{ gridTemplateColumns: gridCols }}
     >
       {/* Story Name */}
-      <div className="flex items-center gap-2 pl-9 pr-3 py-1.5 border-r border-border">
+      <div className="flex items-start gap-2 pl-9 pr-3 py-1.5 border-r border-border min-w-0">
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="text-xs text-muted-foreground flex-1 break-words leading-snug">
+            <span className="text-xs text-muted-foreground flex-1 min-w-0 break-words leading-snug">
               {story.title}
             </span>
           </TooltipTrigger>
