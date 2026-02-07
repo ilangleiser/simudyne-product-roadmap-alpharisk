@@ -10,6 +10,7 @@ import {
   Download,
   Settings,
   Sparkles,
+  MessageSquare,
   Home,
   TrendingUp,
   Activity,
@@ -23,6 +24,7 @@ const getNavItems = (productId: string) => [
   { to: `/${productId}/roadmap`, icon: GitBranch, label: "Roadmap" },
   { to: `/${productId}/stories`, icon: FileText, label: "Stories" },
   { to: `/${productId}/generate`, icon: Sparkles, label: "AI Generate" },
+  { to: `/${productId}/assistant`, icon: MessageSquare, label: "PM Assistant" },
   { to: `/${productId}/export`, icon: Download, label: "Export" },
 ];
 

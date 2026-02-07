@@ -13,6 +13,7 @@ import RoadmapPage from "@/pages/RoadmapPage";
 import StoriesPage from "@/pages/StoriesPage";
 import GeneratePage from "@/pages/GeneratePage";
 import ExportPage from "@/pages/ExportPage";
+import PMAssistantPage from "@/pages/PMAssistantPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="roadmap" element={<RoadmapPage />} />
             <Route path="stories" element={<StoriesPage />} />
             <Route path="generate" element={<GeneratePage />} />
+            <Route path="assistant" element={<PMAssistantPage />} />
             <Route path="export" element={<ExportPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
