@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Epic, UserStory } from "@/types/epic";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,7 +10,6 @@ import {
   getStatusColorClass,
   calculateStoryPosition,
   calculateEpicProgress,
-  formatDateShort,
 } from "@/lib/ganttUtils";
 
 interface GanttRowProps {
@@ -18,18 +17,23 @@ interface GanttRowProps {
   year: number;
   isExpanded: boolean;
   onToggle: () => void;
+  labelWidth: number;
 }
 
-export function GanttRow({ epic, year, isExpanded, onToggle }: GanttRowProps) {
+export function GanttRow({ epic, year, isExpanded, onToggle, labelWidth }: GanttRowProps) {
   const barStart = calculateBarStart(epic, year);
   const barWidth = calculateBarWidth(epic, year);
   const progress = calculateEpicProgress(epic);
   const hasStories = epic.stories.length > 0;
+  const gridCols = `${labelWidth}px 1fr`;
 
   return (
     <>
       {/* Epic Row */}
-      <div className="group grid grid-cols-[250px_1fr] border-b border-border hover:bg-muted/30 transition-colors">
+      <div
+        className="group grid border-b border-border hover:bg-muted/30 transition-colors"
+        style={{ gridTemplateColumns: gridCols }}
+      >
         {/* Epic Name */}
         <div
           className="flex items-center gap-2 px-3 py-2 cursor-pointer border-r border-border"
@@ -59,7 +63,7 @@ export function GanttRow({ epic, year, isExpanded, onToggle }: GanttRowProps) {
               </div>
             </TooltipContent>
           </Tooltip>
-          <Badge variant="secondary" className="text-xs ml-auto">
+          <Badge variant="secondary" className="text-xs ml-auto flex-shrink-0">
             {epic.stories.length}
           </Badge>
         </div>
@@ -124,6 +128,7 @@ export function GanttRow({ epic, year, isExpanded, onToggle }: GanttRowProps) {
           year={year}
           storyIndex={idx}
           totalStories={epic.stories.length}
+          labelWidth={labelWidth}
         />
       ))}
     </>
@@ -136,13 +141,18 @@ interface StoryRowProps {
   year: number;
   storyIndex: number;
   totalStories: number;
+  labelWidth: number;
 }
 
-function StoryRow({ story, epic, year, storyIndex, totalStories }: StoryRowProps) {
+function StoryRow({ story, epic, year, storyIndex, totalStories, labelWidth }: StoryRowProps) {
   const { start, width } = calculateStoryPosition(story, epic, storyIndex, totalStories);
+  const gridCols = `${labelWidth}px 1fr`;
 
   return (
-    <div className="grid grid-cols-[250px_1fr] border-b border-border/50 bg-muted/10">
+    <div
+      className="grid border-b border-border/50 bg-muted/10"
+      style={{ gridTemplateColumns: gridCols }}
+    >
       {/* Story Name */}
       <div className="flex items-center gap-2 pl-9 pr-3 py-1.5 border-r border-border">
         <Tooltip>
@@ -168,7 +178,7 @@ function StoryRow({ story, epic, year, storyIndex, totalStories }: StoryRowProps
             </div>
           </TooltipContent>
         </Tooltip>
-        <Badge className={`text-xs capitalize ${getStatusColorClass(story.status)}`}>
+        <Badge className={`text-xs capitalize flex-shrink-0 ${getStatusColorClass(story.status)}`}>
           {story.status}
         </Badge>
       </div>
