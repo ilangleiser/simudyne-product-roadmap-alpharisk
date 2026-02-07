@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { Epic } from "@/types/epic";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -6,16 +6,51 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GanttTimeline } from "./GanttTimeline";
 import { GanttRow } from "./GanttRow";
-import { Expand, Shrink, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface GanttChartProps {
   epics: Epic[];
   year: number;
 }
 
+const MIN_LABEL_WIDTH = 180;
+const MAX_LABEL_WIDTH = 500;
+const DEFAULT_LABEL_WIDTH = 250;
+
 export function GanttChart({ epics, year }: GanttChartProps) {
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
   const [allExpanded, setAllExpanded] = useState(false);
+  const [labelWidth, setLabelWidth] = useState(DEFAULT_LABEL_WIDTH);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(DEFAULT_LABEL_WIDTH);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = labelWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = e.clientX - startX.current;
+      const newWidth = Math.min(MAX_LABEL_WIDTH, Math.max(MIN_LABEL_WIDTH, startWidth.current + delta));
+      setLabelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [labelWidth]);
 
   const toggleEpic = (epicId: string) => {
     setExpandedEpics((prev) => {
@@ -50,6 +85,8 @@ export function GanttChart({ epics, year }: GanttChartProps) {
     ),
     [epics]
   );
+
+  const gridCols = `${labelWidth}px 1fr`;
 
   return (
     <Card>
@@ -94,9 +131,18 @@ export function GanttChart({ epics, year }: GanttChartProps) {
         <ScrollArea className="w-full">
           <div className="min-w-[900px]">
             {/* Header Row */}
-            <div className="grid grid-cols-[250px_1fr] border-b border-border sticky top-0 bg-background z-20">
-              <div className="px-3 py-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/30">
+            <div
+              className="grid border-b border-border sticky top-0 bg-background z-20"
+              style={{ gridTemplateColumns: gridCols }}
+            >
+              <div className="relative px-3 py-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/30 select-none">
                 Epic / Story
+                {/* Resize handle */}
+                <div
+                  className="absolute top-0 right-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-30"
+                  onMouseDown={handleMouseDown}
+                  title="Drag to resize"
+                />
               </div>
               <div className="relative">
                 <GanttTimeline year={year} />
@@ -117,6 +163,7 @@ export function GanttChart({ epics, year }: GanttChartProps) {
                     year={year}
                     isExpanded={expandedEpics.has(epic.id)}
                     onToggle={() => toggleEpic(epic.id)}
+                    labelWidth={labelWidth}
                   />
                 ))
               )}
