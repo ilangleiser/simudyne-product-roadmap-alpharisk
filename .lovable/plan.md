@@ -1,93 +1,135 @@
 
 
-## Add AlphaRisk Studio as a Third Product
+## AI Product Manager Assistant
 
-Add AlphaRisk Studio to the Product Hub with its full 12-agent roadmap extracted from the uploaded PDF. The product will appear alongside Horizon and Pulse_SDG on the hub page.
-
----
-
-### Product Definition
-
-**AlphaRisk Studio**
-- **ID**: `alpharisk-studio`
-- **Name**: AlphaRisk Studio
-- **Description**: Composable Simulation OS -- 12-Agent Marketplace
-- **Icon**: `Sparkles` (representing AI/agents)
-- **Sub-products**: RegimeDetector, OrderbookGPT, CausalValidator, AlphaForge, RiskOracle, CrowdingRadar, ExecutionOptimizer, LiquidityStress, PortfolioArchitect, CausalCouncil, RegimeAllocator, WorkflowOrchestrator
+A conversational AI assistant embedded into the product roadmap tool that acts as an expert product manager. It has full context of the current product's epics, stories, roadmap data, and can help with strategic decisions, story refinement, sprint planning, and roadmap analysis.
 
 ---
 
-### Roadmap Epics (from PDF)
+### What It Does
 
-The 12 agents will be mapped to epics organized by their shipping quarter and tier, with dates derived from the PDF's shipping timeline:
+The assistant will be a chat panel accessible from the sidebar navigation. When opened, it streams responses in real-time and has awareness of the current product's data (epics, stories, quarters, modules, customers). 
 
-| # | Epic Title | Module | Quarter | Tier | Date Range |
-|---|-----------|--------|---------|------|------------|
-| 1 | RegimeDetector | Model | Q2 | T1 - Foundation | Apr 6 - Apr 12, 2026 |
-| 2 | OrderbookGPT | Model | Q2 | T2 - Simulation | Apr 13 - Apr 19, 2026 |
-| 3 | CausalValidator | Model | Q2 | T1 - Foundation | Apr 20 - Apr 26, 2026 |
-| 4 | AlphaForge | Model | Q2 | T1 - Foundation | Apr 27 - May 3, 2026 |
-| 5 | RiskOracle | Model | Q3 | T2 - Simulation | Jul 6 - Jul 12, 2026 |
-| 6 | CrowdingRadar | Model | Q3 | T2 - Simulation | Jul 13 - Jul 19, 2026 |
-| 7 | ExecutionOptimizer | Pipeline | Q3 | T3 - Optimization | Jul 20 - Jul 26, 2026 |
-| 8 | LiquidityStress | Model | Q3 | T3 - Optimization | Jul 27 - Aug 2, 2026 |
-| 9 | PortfolioArchitect | Pipeline | Q3 | T3 - Optimization | Aug 3 - Aug 9, 2026 |
-| 10 | CausalCouncil | Model | Q4 | T4 - Intelligence | Sep 28 - Oct 4, 2026 |
-| 11 | RegimeAllocator | Model | Q4 | T4 - Intelligence | Oct 5 - Oct 11, 2026 |
-| 12 | WorkflowOrchestrator | Pipeline | Q4 | T4 - Intelligence | Oct 12 - Oct 18, 2026 |
-
-Additionally, 3 milestone epics will be added:
-- **Marketplace Launch** (Q2 end) -- deployment and listing
-- **Agent Composition Validation** (Q3 end) -- proving multi-agent MCP architecture
-- **Full Studio Release** (Q4 end) -- $500K/desk/year product launch
+Example interactions:
+- "Which epics are at risk of not shipping this quarter?"
+- "Suggest acceptance criteria for the RegimeDetector epic"
+- "What's the story point distribution across Q2?"
+- "Help me prioritize these 5 epics for the next sprint"
+- "Write a stakeholder update email for Q3 progress"
+- "What dependencies should I watch out for between CausalValidator and AlphaForge?"
 
 ---
 
-### Changes Required
+### Components to Build
 
-#### 1. `src/types/product.ts`
-- Add AlphaRisk Studio to the `PRODUCTS` array with id `alpharisk-studio`
+#### 1. New Edge Function: `pm-assistant`
 
-#### 2. `src/data/seedData.ts`
-- Add `alphaRiskStudioSeedEpics` array with 15 epics (12 agents + 3 milestones)
-- Each epic includes the agent description, tier, dependencies, and pricing from the PDF
+A streaming edge function that:
+- Receives the chat messages plus full product context (epics, stories, metadata)
+- Uses a detailed system prompt that establishes the AI as an expert agile PM with financial technology domain knowledge
+- Streams responses token-by-token using SSE
+- Handles rate limiting (429) and credit errors (402)
 
-#### 3. `src/contexts/EpicContext.tsx`
-- Import the new seed data
-- Add `alpharisk-studio` case to `getSeedData()` function
+#### 2. New Page: `src/pages/PMAssistantPage.tsx`
 
-#### 4. `src/pages/ProductHub.tsx`
-- Update the icon mapping to handle the new product's icon
-- Adjust the grid layout from `md:grid-cols-2` to `md:grid-cols-3` to accommodate 3 product cards
+A full chat interface with:
+- Message history (user and assistant messages)
+- Real-time streaming with token-by-token rendering
+- Markdown rendering for formatted responses (tables, lists, code blocks)
+- Product context automatically injected into every request
+- Quick-action suggestion chips for common PM tasks
+- Clear conversation button
 
-#### 5. `src/components/layout/Sidebar.tsx`
-- Add `Sparkles` to the icon mapping for AlphaRisk Studio's icon
+#### 3. Sidebar Navigation Update
 
-#### 6. `src/components/layout/MobileSidebar.tsx`
-- Same icon mapping update as Sidebar
+- Add "PM Assistant" nav item with `MessageSquare` icon to both `Sidebar.tsx` and `MobileSidebar.tsx`
+- Route: `/:productId/assistant`
+
+#### 4. Route Registration in `App.tsx`
+
+- Add the new route under the `/:productId` product layout
 
 ---
 
-### Hub Layout Update
-
-The product grid will change from a 2-column layout to a 3-column layout:
+### Architecture
 
 ```text
- -----------------------------------------------
-|  Simudyne Product Roadmap                      |
-|                                                 |
-|  [Horizon]  [Pulse_SDG]  [AlphaRisk Studio]    |
-|  17 epics    11 epics     15 epics              |
-|  Q1-Q4       Q1-Q4        Q2-Q4                 |
- -----------------------------------------------
+User types message
+       |
+       v
+PMAssistantPage.tsx
+  - Collects current product's epics/stories
+  - Builds context summary
+  - Streams via fetch to edge function
+       |
+       v
+supabase/functions/pm-assistant/index.ts
+  - Receives messages + product context
+  - System prompt: expert PM persona
+  - Calls Lovable AI Gateway (streaming)
+  - Returns SSE stream
+       |
+       v
+Token-by-token rendering in chat UI
+  - Markdown support via react-markdown
+  - Auto-scroll to bottom
+  - Loading indicator while streaming
 ```
+
+---
+
+### System Prompt Design
+
+The PM assistant will have deep context:
+- **Role**: Expert agile product manager specializing in financial technology
+- **Context injection**: Each request will include a summary of the current product's epics (titles, quarters, story counts, modules, customers, dates)
+- **Capabilities**: Sprint planning, story refinement, risk analysis, stakeholder communication, prioritization frameworks (MoSCoW, RICE), dependency analysis
+
+---
+
+### UI Design
+
+The chat page will feature:
+- A clean message list with user/assistant message bubbles
+- A fixed input area at the bottom with send button
+- Suggestion chips above the input for quick actions like:
+  - "Summarize roadmap status"
+  - "Identify at-risk epics"
+  - "Draft sprint goals"
+  - "Analyze story coverage"
+- Assistant messages rendered with markdown support for rich formatting
+
+---
+
+### Dependencies
+
+- **react-markdown**: New dependency needed for rendering markdown in assistant responses
+- **Lovable AI Gateway**: Already configured with `LOVABLE_API_KEY`
+- **Model**: `google/gemini-3-flash-preview` (default)
+
+---
+
+### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/pm-assistant/index.ts` | Streaming edge function with PM system prompt |
+| `src/pages/PMAssistantPage.tsx` | Chat interface with streaming, markdown, context injection |
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/App.tsx` | Add `/assistant` route under product layout |
+| `src/components/layout/Sidebar.tsx` | Add "PM Assistant" nav item |
+| `src/components/layout/MobileSidebar.tsx` | Add "PM Assistant" nav item |
+| `supabase/config.toml` | Register the new edge function |
 
 ---
 
 ### Technical Notes
 
-- The `max-w-4xl` constraint on the grid will be widened to `max-w-6xl` to fit 3 cards
-- Each agent epic's `sprint` field will use the tier designation (e.g., "T1 - Foundation")
-- The `customer` field will store the pricing info (e.g., "$25K/yr") for reference
-- No routing or architecture changes needed -- the existing `/:productId` pattern handles any number of products automatically
-
+- Product context (epics summary) is built client-side and sent with each message to keep the assistant aware of the current state
+- Conversation history is kept in React state (not persisted to database) to keep things simple
+- The streaming implementation follows the established SSE pattern with line-by-line parsing, CRLF handling, and final buffer flush
+- The edge function mirrors the pattern from `generate-stories` but with streaming enabled
