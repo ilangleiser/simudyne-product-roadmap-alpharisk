@@ -81,7 +81,7 @@ export default function ProductHub() {
 
       {/* Product Cards */}
       <main className="container mx-auto px-6 py-12">
-        <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+        <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
           {PRODUCTS.map((product) => {
             const IconComponent = getProductIcon(product.icon);
             const stats = productStats[product.id] || { epicCount: 0, storyCount: 0, quarters: [] };
