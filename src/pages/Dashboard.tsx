@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useEpics } from "@/contexts/EpicContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,45 @@ import {
   Users,
   TrendingUp,
 } from "lucide-react";
+import { PortfolioGanttChart, ProductEpics } from "@/components/roadmap/PortfolioGanttChart";
+import { PRODUCTS } from "@/types/product";
+import { Epic } from "@/types/epic";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const STORAGE_PREFIX = "simudyne-epics-";
 
 export default function Dashboard() {
   const { productId } = useParams<{ productId: string }>();
   const { epics, isLoading } = useEpics();
+  const [productData, setProductData] = useState<ProductEpics[]>([]);
+  const [selectedYear, setSelectedYear] = useState(2026);
+
+  useEffect(() => {
+    // Load epic data for all products from localStorage
+    const allProductData: ProductEpics[] = [];
+    
+    PRODUCTS.forEach((product) => {
+      try {
+        const stored = localStorage.getItem(`${STORAGE_PREFIX}${product.id}`);
+        if (stored) {
+          const loadedEpics: Epic[] = JSON.parse(stored);
+          allProductData.push({ product, epics: loadedEpics });
+        } else {
+          allProductData.push({ product, epics: [] });
+        }
+      } catch {
+        allProductData.push({ product, epics: [] });
+      }
+    });
+
+    setProductData(allProductData);
+  }, []);
 
   const totalStories = epics.reduce((acc, epic) => acc + epic.stories.length, 0);
   const storiesByStatus = epics.reduce(
@@ -284,6 +319,33 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Portfolio Gantt Chart */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Simudyne Portfolio Roadmap</h2>
+            <p className="text-sm text-muted-foreground">All products timeline overview</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
+            >
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+                <SelectItem value="2027">2027</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <PortfolioGanttChart productData={productData} year={selectedYear} />
+      </div>
     </div>
   );
 }
